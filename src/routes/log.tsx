@@ -40,14 +40,12 @@ interface LogRow {
 }
 
 interface LogSearch {
-  habit?: Habit;
+  habit?: string;
 }
 
 export const Route = createFileRoute("/log")({
   validateSearch: (s: Record<string, unknown>): LogSearch => ({
-    habit: typeof s.habit === "string" && (HABITS as readonly string[]).includes(s.habit)
-      ? (s.habit as Habit)
-      : undefined,
+    habit: typeof s.habit === "string" && s.habit.length > 0 ? s.habit : undefined,
   }),
   head: () => ({
     meta: [

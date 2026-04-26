@@ -36,7 +36,7 @@ export const HABITS = [
 
 export type Habit = (typeof HABITS)[number];
 
-export const HABIT_ICONS: Record<Habit, LucideIcon> = {
+export const HABIT_ICONS: Record<string, LucideIcon> = {
   "DSA & Coding": Code2,
   "Reading a Book": BookOpen,
   "Exercise & Workout": Dumbbell,
@@ -49,6 +49,65 @@ export const HABIT_ICONS: Record<Habit, LucideIcon> = {
   "Sleep Tracking": Moon,
   "Career & Projects": Briefcase,
 };
+
+/** Icon resolver — falls back to Sparkles for custom user habits. */
+export function iconForHabit(habit: string): LucideIcon {
+  return HABIT_ICONS[habit] ?? Sparkles;
+}
+
+/** Hook: load the current user's custom habits from Supabase. */
+export interface CustomHabit {
+  id: string;
+  habit_name: string;
+  created_at: string;
+}
+
+export function useCustomHabits() {
+  const { user } = useAuth();
+  const [customHabits, setCustomHabits] = React.useState<CustomHabit[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  const reload = React.useCallback(async () => {
+    if (!user) {
+      setCustomHabits([]);
+      setLoading(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("custom_habits")
+      .select("id,habit_name,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+    setCustomHabits((data ?? []) as CustomHabit[]);
+    setLoading(false);
+  }, [user]);
+
+  React.useEffect(() => {
+    reload();
+  }, [reload]);
+
+  /** Default habits + user's custom habits, with the "Custom Habit" sentinel last. */
+  const allHabits = React.useMemo<string[]>(
+    () => [...HABITS, ...customHabits.map((c) => c.habit_name), CUSTOM_HABIT_OPTION],
+    [customHabits],
+  );
+
+  return { customHabits, allHabits, loading, reload };
+}
+
+/** Add a custom habit row for the current user. Returns the inserted name on success. */
+export async function addCustomHabit(userId: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "Please name your habit." };
+  if ((HABITS as readonly string[]).includes(trimmed)) {
+    return { error: "That habit already exists." };
+  }
+  const { error } = await supabase
+    .from("custom_habits")
+    .insert({ user_id: userId, habit_name: trimmed });
+  if (error) return { error: error.message };
+  return { name: trimmed };
+}
 
 // Returns Tailwind classes for note card border and background per habit
 export function habitNoteColors(habit: string): { border: string; bg: string; dot: string } {

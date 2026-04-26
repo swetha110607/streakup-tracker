@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, avatarStyleById, getInitials } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 
 const TABS = [
@@ -8,6 +8,7 @@ const TABS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/log", label: "Log Today" },
   { to: "/notes", label: "Notes" },
+  { to: "/profile", label: "Profile" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -27,14 +28,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const displayName = profile?.name || user.email || "User";
-  const initials = (displayName || "U")
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const displayName = profile?.name || "You";
+  const initials = getInitials(displayName);
+  const style = avatarStyleById(profile?.avatar_style);
+  const avatarUrl = profile?.avatar_url;
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,12 +42,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             StreakUp
           </Link>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-              {initials}
-            </div>
-            <span className="hidden text-sm font-medium text-foreground sm:inline">
-              {displayName}
-            </span>
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-muted"
+              aria-label="Open profile"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
+                  style={{ backgroundColor: style.bg, color: style.fg }}
+                >
+                  {initials}
+                </span>
+              )}
+              <span className="hidden pr-2 text-sm font-medium text-foreground sm:inline">
+                {displayName}
+              </span>
+            </Link>
             <Button variant="ghost" size="sm" onClick={() => signOut()}>
               Sign out
             </Button>

@@ -475,7 +475,8 @@ function LogContent() {
             </>
           )}
 
-          {habit !== "DSA & Coding" &&
+          {isDefaultHabit &&
+            habit !== "DSA & Coding" &&
             habit !== "Career & Projects" &&
             habit !== "Reading a Book" &&
             habit !== "Exercise & Workout" && (
@@ -511,8 +512,16 @@ function LogContent() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Saving…" : "Save today's log"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={busy || (isCustomSentinel && !customNameInput.trim())}
+          >
+            {busy
+              ? "Saving…"
+              : isCustomSentinel
+                ? "Add custom habit"
+                : "Save today's log"}
           </Button>
         </form>
       </Card>

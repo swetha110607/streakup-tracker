@@ -49,6 +49,7 @@ function NotesPage() {
 
 function NotesContent() {
   const { user } = useAuth();
+  const { allHabits } = useCustomHabits();
   const [notes, setNotes] = React.useState<LogRow[]>([]);
   const [filter, setFilter] = React.useState<string>("all");
   const [loading, setLoading] = React.useState(true);

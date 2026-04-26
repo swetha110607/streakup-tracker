@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_habits: {
+        Row: {
+          created_at: string
+          habit_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          habit_name: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          habit_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       logs: {
         Row: {
           created_at: string

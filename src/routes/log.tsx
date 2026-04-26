@@ -309,12 +309,12 @@ function LogContent() {
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label>Habit</Label>
-            <Select value={habit} onValueChange={(v) => setHabit(v as Habit)}>
+            <Select value={habit} onValueChange={(v) => setHabit(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {HABITS.map((h) => (
+                {allHabits.map((h) => (
                   <SelectItem key={h} value={h}>
                     {h}
                   </SelectItem>
@@ -322,6 +322,60 @@ function LogContent() {
               </SelectContent>
             </Select>
           </div>
+
+          {isCustomSentinel && (
+            <div className="space-y-2">
+              <Label htmlFor="customName">Name your habit</Label>
+              <Input
+                id="customName"
+                value={customNameInput}
+                onChange={(e) => setCustomNameInput(e.target.value)}
+                placeholder="e.g. Guitar Practice, Sketching, Drinking Water"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll save this to your habits and tailor the daily-log fields for you.
+              </p>
+            </div>
+          )}
+
+          {isExistingCustomHabit && loadingFields && (
+            <p className="text-sm text-muted-foreground">
+              ✨ Generating the right fields for "{habit}"…
+            </p>
+          )}
+
+          {isExistingCustomHabit && !loadingFields && customFields && (
+            <>
+              {customFields.map((f) => (
+                <div key={f.key} className="space-y-2">
+                  <Label htmlFor={`cf-${f.key}`}>{f.label}</Label>
+                  {f.type === "textarea" ? (
+                    <Textarea
+                      id={`cf-${f.key}`}
+                      rows={3}
+                      value={customValues[f.key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((v) => ({ ...v, [f.key]: e.target.value }))
+                      }
+                      placeholder={f.placeholder}
+                    />
+                  ) : (
+                    <Input
+                      id={`cf-${f.key}`}
+                      type={f.type === "number" ? "number" : "text"}
+                      min={f.type === "number" ? 0 : undefined}
+                      value={customValues[f.key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((v) => ({ ...v, [f.key]: e.target.value }))
+                      }
+                      placeholder={f.placeholder}
+                    />
+                  )}
+                </div>
+              ))}
+            </>
+          )}
 
           {(habit === "DSA & Coding" || habit === "Career & Projects") && (
             <>

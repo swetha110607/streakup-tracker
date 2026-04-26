@@ -172,7 +172,7 @@ function LogContent() {
       payload.topic = amount.trim() || null;
     }
 
-    const { error } = await supabase.from("logs").insert(payload);
+    const { error } = await supabase.from("logs").insert(payload as never);
     setBusy(false);
     if (error) {
       toast.error(error.message);

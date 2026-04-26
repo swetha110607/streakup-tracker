@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { HABITS } from "@/lib/habits";
+import { useCustomHabits, CUSTOM_HABIT_OPTION } from "@/lib/habits";
 import { NoteCard } from "@/routes/log";
 
 interface LogRow {

@@ -76,7 +76,8 @@ function LogPage() {
 function LogContent() {
   const { user } = useAuth();
   const search = Route.useSearch();
-  const [habit, setHabit] = React.useState<Habit>(search.habit ?? "DSA & Coding");
+  const { allHabits, reload: reloadCustom } = useCustomHabits();
+  const [habit, setHabit] = React.useState<string>(search.habit ?? "DSA & Coding");
   const [topic, setTopic] = React.useState("");
   const [questions, setQuestions] = React.useState<number>(0);
   const [easy, setEasy] = React.useState(false);
@@ -91,6 +92,58 @@ function LogContent() {
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+
+  // Custom-habit flow
+  const [customNameInput, setCustomNameInput] = React.useState("");
+  const [customFields, setCustomFields] = React.useState<CustomFieldDef[] | null>(null);
+  const [customValues, setCustomValues] = React.useState<Record<string, string>>({});
+  const [loadingFields, setLoadingFields] = React.useState(false);
+  const fieldsCache = React.useRef<Record<string, CustomFieldDef[]>>({});
+
+  const isDefaultHabit = (HABITS as readonly string[]).includes(habit);
+  const isCustomSentinel = habit === CUSTOM_HABIT_OPTION;
+  const isExistingCustomHabit = !isDefaultHabit && !isCustomSentinel;
+
+  // When an existing custom habit is selected, fetch AI-generated fields (cached per name)
+  React.useEffect(() => {
+    if (!isExistingCustomHabit) {
+      setCustomFields(null);
+      return;
+    }
+    const cached = fieldsCache.current[habit];
+    if (cached) {
+      setCustomFields(cached);
+      setCustomValues({});
+      return;
+    }
+    let cancelled = false;
+    setLoadingFields(true);
+    setCustomFields(null);
+    supabase.functions
+      .invoke("generate-habit-fields", { body: { habit_name: habit } })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.fields) {
+          toast.error("Couldn't generate fields. Using a generic form.");
+          const fallback: CustomFieldDef[] = [
+            { key: "what", label: "What did you do?", type: "text" },
+            { key: "duration", label: "Duration / amount", type: "text" },
+          ];
+          fieldsCache.current[habit] = fallback;
+          setCustomFields(fallback);
+        } else {
+          fieldsCache.current[habit] = data.fields;
+          setCustomFields(data.fields);
+        }
+        setCustomValues({});
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingFields(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [habit, isExistingCustomHabit]);
 
   const [todayNotes, setTodayNotes] = React.useState<LogRow[]>([]);
 

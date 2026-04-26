@@ -177,11 +177,36 @@ function LogContent() {
     setDescription("");
     setAmount("");
     setNote("");
+    setCustomValues({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // If user is on the "Custom Habit" sentinel, create the habit first then redirect into it.
+    if (isCustomSentinel) {
+      const trimmed = customNameInput.trim();
+      if (!trimmed) {
+        toast.error("Please name your habit first.");
+        return;
+      }
+      setBusy(true);
+      const res = await import("@/lib/habits").then((m) =>
+        m.addCustomHabit(user.id, trimmed),
+      );
+      setBusy(false);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      await reloadCustom();
+      setHabit(res.name!);
+      setCustomNameInput("");
+      toast.success(`Added "${res.name}" — fill in today's log below.`);
+      return;
+    }
+
     setBusy(true);
 
     // Build per-habit payload
@@ -204,9 +229,7 @@ function LogContent() {
       if (easy) buckets.push("e");
       if (medium) buckets.push("m");
       if (hard) buckets.push("h");
-      // distribute
       if (buckets.length === 0) {
-        // no toggle: dump into easy
         qe = total;
       } else {
         buckets.forEach((b, i) => {
@@ -227,6 +250,41 @@ function LogContent() {
     } else if (habit === "Exercise & Workout") {
       payload.topic = workoutType.trim() || null;
       payload.duration = duration || null;
+    } else if (isExistingCustomHabit && customFields) {
+      // Map AI-generated fields into existing log columns:
+      //   - first numeric field → duration (or pages if label mentions "page")
+      //   - first text/textarea field → topic
+      //   - remaining fields serialized into description as "Label: value" lines
+      const lines: string[] = [];
+      let topicSet = false;
+      let durationSet = false;
+      let pagesSet = false;
+      for (const f of customFields) {
+        const raw = (customValues[f.key] ?? "").trim();
+        if (!raw) continue;
+        if (f.type === "number") {
+          const n = parseInt(raw, 10);
+          if (!Number.isNaN(n)) {
+            if (!pagesSet && /page/i.test(f.label)) {
+              payload.pages = n;
+              pagesSet = true;
+              continue;
+            }
+            if (!durationSet) {
+              payload.duration = n;
+              durationSet = true;
+              continue;
+            }
+          }
+          lines.push(`${f.label}: ${raw}`);
+        } else if (!topicSet) {
+          payload.topic = raw;
+          topicSet = true;
+        } else {
+          lines.push(`${f.label}: ${raw}`);
+        }
+      }
+      if (lines.length > 0) payload.description = lines.join("\n");
     } else {
       payload.description = description.trim() || null;
       payload.topic = amount.trim() || null;

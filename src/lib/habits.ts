@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Code2,
   BookOpen,
@@ -10,8 +11,14 @@ import {
   Apple,
   Moon,
   Briefcase,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+
+/** Sentinel value used in habit dropdowns to trigger custom-habit creation flow. */
+export const CUSTOM_HABIT_OPTION = "✨ Custom Habit";
 
 export const HABITS = [
   "DSA & Coding",

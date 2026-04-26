@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { HABITS } from "@/lib/habits";
+import { useCustomHabits, CUSTOM_HABIT_OPTION } from "@/lib/habits";
 import { NoteCard } from "@/routes/log";
 
 interface LogRow {
@@ -49,6 +49,7 @@ function NotesPage() {
 
 function NotesContent() {
   const { user } = useAuth();
+  const { allHabits } = useCustomHabits();
   const [notes, setNotes] = React.useState<LogRow[]>([]);
   const [filter, setFilter] = React.useState<string>("all");
   const [loading, setLoading] = React.useState(true);
@@ -79,11 +80,13 @@ function NotesContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All habits</SelectItem>
-            {HABITS.map((h) => (
-              <SelectItem key={h} value={h}>
-                {h}
-              </SelectItem>
-            ))}
+            {allHabits
+              .filter((h) => h !== CUSTOM_HABIT_OPTION)
+              .map((h) => (
+                <SelectItem key={h} value={h}>
+                  {h}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>

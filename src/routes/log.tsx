@@ -18,11 +18,20 @@ import { useAuth } from "@/lib/auth-context";
 import {
   HABITS,
   HABIT_ICONS,
+  CUSTOM_HABIT_OPTION,
   habitNoteColors,
   todayISO,
+  useCustomHabits,
   type Habit,
 } from "@/lib/habits";
 import { toast } from "sonner";
+
+interface CustomFieldDef {
+  key: string;
+  label: string;
+  type: "text" | "number" | "textarea";
+  placeholder?: string;
+}
 
 interface LogRow {
   id: string;
@@ -40,14 +49,12 @@ interface LogRow {
 }
 
 interface LogSearch {
-  habit?: Habit;
+  habit?: string;
 }
 
 export const Route = createFileRoute("/log")({
   validateSearch: (s: Record<string, unknown>): LogSearch => ({
-    habit: typeof s.habit === "string" && (HABITS as readonly string[]).includes(s.habit)
-      ? (s.habit as Habit)
-      : undefined,
+    habit: typeof s.habit === "string" && s.habit.length > 0 ? s.habit : undefined,
   }),
   head: () => ({
     meta: [
@@ -69,7 +76,8 @@ function LogPage() {
 function LogContent() {
   const { user } = useAuth();
   const search = Route.useSearch();
-  const [habit, setHabit] = React.useState<Habit>(search.habit ?? "DSA & Coding");
+  const { allHabits, reload: reloadCustom } = useCustomHabits();
+  const [habit, setHabit] = React.useState<string>(search.habit ?? "DSA & Coding");
   const [topic, setTopic] = React.useState("");
   const [questions, setQuestions] = React.useState<number>(0);
   const [easy, setEasy] = React.useState(false);
@@ -84,6 +92,58 @@ function LogContent() {
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+
+  // Custom-habit flow
+  const [customNameInput, setCustomNameInput] = React.useState("");
+  const [customFields, setCustomFields] = React.useState<CustomFieldDef[] | null>(null);
+  const [customValues, setCustomValues] = React.useState<Record<string, string>>({});
+  const [loadingFields, setLoadingFields] = React.useState(false);
+  const fieldsCache = React.useRef<Record<string, CustomFieldDef[]>>({});
+
+  const isDefaultHabit = (HABITS as readonly string[]).includes(habit);
+  const isCustomSentinel = habit === CUSTOM_HABIT_OPTION;
+  const isExistingCustomHabit = !isDefaultHabit && !isCustomSentinel;
+
+  // When an existing custom habit is selected, fetch AI-generated fields (cached per name)
+  React.useEffect(() => {
+    if (!isExistingCustomHabit) {
+      setCustomFields(null);
+      return;
+    }
+    const cached = fieldsCache.current[habit];
+    if (cached) {
+      setCustomFields(cached);
+      setCustomValues({});
+      return;
+    }
+    let cancelled = false;
+    setLoadingFields(true);
+    setCustomFields(null);
+    supabase.functions
+      .invoke("generate-habit-fields", { body: { habit_name: habit } })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.fields) {
+          toast.error("Couldn't generate fields. Using a generic form.");
+          const fallback: CustomFieldDef[] = [
+            { key: "what", label: "What did you do?", type: "text" },
+            { key: "duration", label: "Duration / amount", type: "text" },
+          ];
+          fieldsCache.current[habit] = fallback;
+          setCustomFields(fallback);
+        } else {
+          fieldsCache.current[habit] = data.fields;
+          setCustomFields(data.fields);
+        }
+        setCustomValues({});
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingFields(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [habit, isExistingCustomHabit]);
 
   const [todayNotes, setTodayNotes] = React.useState<LogRow[]>([]);
 
@@ -117,11 +177,36 @@ function LogContent() {
     setDescription("");
     setAmount("");
     setNote("");
+    setCustomValues({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // If user is on the "Custom Habit" sentinel, create the habit first then redirect into it.
+    if (isCustomSentinel) {
+      const trimmed = customNameInput.trim();
+      if (!trimmed) {
+        toast.error("Please name your habit first.");
+        return;
+      }
+      setBusy(true);
+      const res = await import("@/lib/habits").then((m) =>
+        m.addCustomHabit(user.id, trimmed),
+      );
+      setBusy(false);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      await reloadCustom();
+      setHabit(res.name!);
+      setCustomNameInput("");
+      toast.success(`Added "${res.name}" — fill in today's log below.`);
+      return;
+    }
+
     setBusy(true);
 
     // Build per-habit payload
@@ -144,9 +229,7 @@ function LogContent() {
       if (easy) buckets.push("e");
       if (medium) buckets.push("m");
       if (hard) buckets.push("h");
-      // distribute
       if (buckets.length === 0) {
-        // no toggle: dump into easy
         qe = total;
       } else {
         buckets.forEach((b, i) => {
@@ -167,6 +250,41 @@ function LogContent() {
     } else if (habit === "Exercise & Workout") {
       payload.topic = workoutType.trim() || null;
       payload.duration = duration || null;
+    } else if (isExistingCustomHabit && customFields) {
+      // Map AI-generated fields into existing log columns:
+      //   - first numeric field → duration (or pages if label mentions "page")
+      //   - first text/textarea field → topic
+      //   - remaining fields serialized into description as "Label: value" lines
+      const lines: string[] = [];
+      let topicSet = false;
+      let durationSet = false;
+      let pagesSet = false;
+      for (const f of customFields) {
+        const raw = (customValues[f.key] ?? "").trim();
+        if (!raw) continue;
+        if (f.type === "number") {
+          const n = parseInt(raw, 10);
+          if (!Number.isNaN(n)) {
+            if (!pagesSet && /page/i.test(f.label)) {
+              payload.pages = n;
+              pagesSet = true;
+              continue;
+            }
+            if (!durationSet) {
+              payload.duration = n;
+              durationSet = true;
+              continue;
+            }
+          }
+          lines.push(`${f.label}: ${raw}`);
+        } else if (!topicSet) {
+          payload.topic = raw;
+          topicSet = true;
+        } else {
+          lines.push(`${f.label}: ${raw}`);
+        }
+      }
+      if (lines.length > 0) payload.description = lines.join("\n");
     } else {
       payload.description = description.trim() || null;
       payload.topic = amount.trim() || null;
@@ -191,12 +309,12 @@ function LogContent() {
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label>Habit</Label>
-            <Select value={habit} onValueChange={(v) => setHabit(v as Habit)}>
+            <Select value={habit} onValueChange={(v) => setHabit(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {HABITS.map((h) => (
+                {allHabits.map((h) => (
                   <SelectItem key={h} value={h}>
                     {h}
                   </SelectItem>
@@ -204,6 +322,60 @@ function LogContent() {
               </SelectContent>
             </Select>
           </div>
+
+          {isCustomSentinel && (
+            <div className="space-y-2">
+              <Label htmlFor="customName">Name your habit</Label>
+              <Input
+                id="customName"
+                value={customNameInput}
+                onChange={(e) => setCustomNameInput(e.target.value)}
+                placeholder="e.g. Guitar Practice, Sketching, Drinking Water"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll save this to your habits and tailor the daily-log fields for you.
+              </p>
+            </div>
+          )}
+
+          {isExistingCustomHabit && loadingFields && (
+            <p className="text-sm text-muted-foreground">
+              ✨ Generating the right fields for "{habit}"…
+            </p>
+          )}
+
+          {isExistingCustomHabit && !loadingFields && customFields && (
+            <>
+              {customFields.map((f) => (
+                <div key={f.key} className="space-y-2">
+                  <Label htmlFor={`cf-${f.key}`}>{f.label}</Label>
+                  {f.type === "textarea" ? (
+                    <Textarea
+                      id={`cf-${f.key}`}
+                      rows={3}
+                      value={customValues[f.key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((v) => ({ ...v, [f.key]: e.target.value }))
+                      }
+                      placeholder={f.placeholder}
+                    />
+                  ) : (
+                    <Input
+                      id={`cf-${f.key}`}
+                      type={f.type === "number" ? "number" : "text"}
+                      min={f.type === "number" ? 0 : undefined}
+                      value={customValues[f.key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((v) => ({ ...v, [f.key]: e.target.value }))
+                      }
+                      placeholder={f.placeholder}
+                    />
+                  )}
+                </div>
+              ))}
+            </>
+          )}
 
           {(habit === "DSA & Coding" || habit === "Career & Projects") && (
             <>
@@ -303,7 +475,8 @@ function LogContent() {
             </>
           )}
 
-          {habit !== "DSA & Coding" &&
+          {isDefaultHabit &&
+            habit !== "DSA & Coding" &&
             habit !== "Career & Projects" &&
             habit !== "Reading a Book" &&
             habit !== "Exercise & Workout" && (
@@ -339,8 +512,16 @@ function LogContent() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Saving…" : "Save today's log"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={busy || (isCustomSentinel && !customNameInput.trim())}
+          >
+            {busy
+              ? "Saving…"
+              : isCustomSentinel
+                ? "Add custom habit"
+                : "Save today's log"}
           </Button>
         </form>
       </Card>

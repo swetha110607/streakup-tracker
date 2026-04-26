@@ -80,11 +80,13 @@ function NotesContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All habits</SelectItem>
-            {HABITS.map((h) => (
-              <SelectItem key={h} value={h}>
-                {h}
-              </SelectItem>
-            ))}
+            {allHabits
+              .filter((h) => h !== CUSTOM_HABIT_OPTION)
+              .map((h) => (
+                <SelectItem key={h} value={h}>
+                  {h}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>

@@ -18,11 +18,20 @@ import { useAuth } from "@/lib/auth-context";
 import {
   HABITS,
   HABIT_ICONS,
+  CUSTOM_HABIT_OPTION,
   habitNoteColors,
   todayISO,
+  useCustomHabits,
   type Habit,
 } from "@/lib/habits";
 import { toast } from "sonner";
+
+interface CustomFieldDef {
+  key: string;
+  label: string;
+  type: "text" | "number" | "textarea";
+  placeholder?: string;
+}
 
 interface LogRow {
   id: string;

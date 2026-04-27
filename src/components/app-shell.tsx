@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Sun, Moon } from "lucide-react";
 import { useAuth, avatarStyleById, getInitials } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
 
 const TABS = [
@@ -13,6 +15,7 @@ const TABS = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, loading, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,7 +44,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link to="/" className="text-xl font-bold text-primary">
             StreakUp
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="h-9 w-9"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
             <Link
               to="/profile"
               className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-muted"

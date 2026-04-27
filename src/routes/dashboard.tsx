@@ -246,7 +246,7 @@ interface HabitChartConfig {
   /** for single mode */
   color?: string;
   label?: string;
-  valueOf?: (l: LogRow) => number;
+  pick?: (l: LogRow) => number;
   /** for stacked mode */
   series?: { key: string; color: string; pick: (l: LogRow) => number }[];
 }
@@ -257,9 +257,9 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       unit: "questions",
       mode: "stacked",
       series: [
-        { key: "Easy", color: "var(--streak-easy)", valueOf: (l) => l.questions_easy },
-        { key: "Medium", color: "var(--streak-medium)", valueOf: (l) => l.questions_medium },
-        { key: "Hard", color: "var(--streak-hard)", valueOf: (l) => l.questions_hard },
+        { key: "Easy", color: "var(--streak-easy)", pick: (l) => l.questions_easy },
+        { key: "Medium", color: "var(--streak-medium)", pick: (l) => l.questions_medium },
+        { key: "Hard", color: "var(--streak-hard)", pick: (l) => l.questions_hard },
       ],
     };
   }
@@ -269,7 +269,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Pages",
       color: "var(--streak-teal)",
-      valueOf: (l) => l.pages ?? 0,
+      pick: (l) => l.pages ?? 0,
     };
   }
   if (habit === "Exercise & Workout") {
@@ -278,7 +278,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Minutes",
       color: "var(--streak-medium)",
-      valueOf: (l) => l.duration ?? 0,
+      pick: (l) => l.duration ?? 0,
     };
   }
   if (habit === "Meditation") {
@@ -287,7 +287,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Minutes",
       color: "var(--streak-blue)",
-      valueOf: (l) => l.duration ?? 0,
+      pick: (l) => l.duration ?? 0,
     };
   }
   if (habit === "Water Intake") {
@@ -296,7 +296,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Amount",
       color: "var(--streak-blue)",
-      valueOf: (l) => l.duration ?? l.pages ?? 0,
+      pick: (l) => l.duration ?? l.pages ?? 0,
     };
   }
   // Default — covers Journaling, Sleep, Career, Music, Language, Nutrition, custom habits
@@ -305,7 +305,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
     mode: "single",
     label: "Value",
     color: "var(--primary)",
-    valueOf: (l) => l.duration ?? l.pages ?? 0,
+    pick: (l) => l.duration ?? l.pages ?? 0,
   };
 }
 
@@ -335,11 +335,11 @@ function HabitChart({ habit, logs }: { habit: string; logs: LogRow[] }) {
       if (!slot) continue;
       if (config.mode === "stacked") {
         for (const s of config.series ?? []) {
-          slot[s.key] = (slot[s.key] as number) + s.valueOf(l);
+          slot[s.key] = (slot[s.key] as number) + s.pick(l);
         }
       } else {
         const key = config.label ?? "Value";
-        slot[key] = (slot[key] as number) + (config.valueOf?.(l) ?? 0);
+        slot[key] = (slot[key] as number) + (config.pick?.(l) ?? 0);
       }
     }
     return out;

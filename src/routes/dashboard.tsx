@@ -8,17 +8,24 @@ import {
   ResponsiveContainer,
   Tooltip,
   CartesianGrid,
+  Legend,
 } from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
-  HABIT_ICONS,
   calcStreak,
+  iconForHabit,
   isoNDaysAgo,
   todayISO,
-  type Habit,
 } from "@/lib/habits";
 
 export const Route = createFileRoute("/dashboard")({
@@ -58,6 +65,7 @@ function DashboardContent() {
   const { user } = useAuth();
   const [logs, setLogs] = React.useState<LogRow[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [selectedHabit, setSelectedHabit] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!user) return;
@@ -67,10 +75,36 @@ function DashboardContent() {
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
-      setLogs((data ?? []) as LogRow[]);
+      const rows = (data ?? []) as LogRow[];
+      setLogs(rows);
       setLoading(false);
     })();
   }, [user]);
+
+  // Habits the user has logged at least once, in order of most recent activity
+  const loggedHabits = React.useMemo(() => {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    // logs are sorted by date desc, then created_at via secondary; first occurrence wins
+    const sorted = [...logs].sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.created_at < b.created_at ? 1 : -1;
+    });
+    for (const l of sorted) {
+      if (!seen.has(l.habit)) {
+        seen.add(l.habit);
+        ordered.push(l.habit);
+      }
+    }
+    return ordered;
+  }, [logs]);
+
+  // Default selection = most recently logged habit
+  React.useEffect(() => {
+    if (!selectedHabit && loggedHabits.length > 0) {
+      setSelectedHabit(loggedHabits[0]);
+    }
+  }, [loggedHabits, selectedHabit]);
 
   const allDates = React.useMemo(() => logs.map((l) => l.date), [logs]);
   const overallStreak = React.useMemo(() => calcStreak(allDates), [allDates]);
@@ -99,16 +133,11 @@ function DashboardContent() {
     [logs, sevenDaysAgo],
   );
 
-  // Per-habit grouping
-  const habitGroups = React.useMemo(() => {
-    const map = new Map<string, LogRow[]>();
-    for (const l of logs) {
-      const arr = map.get(l.habit) ?? [];
-      arr.push(l);
-      map.set(l.habit, arr);
-    }
-    return map;
-  }, [logs]);
+  const habitLogs = React.useMemo(
+    () => (selectedHabit ? logs.filter((l) => l.habit === selectedHabit) : []),
+    [logs, selectedHabit],
+  );
+  const habitDates = React.useMemo(() => habitLogs.map((l) => l.date), [habitLogs]);
 
   return (
     <div className="space-y-6">
@@ -129,48 +158,60 @@ function DashboardContent() {
         <MetricCard label="This Week" value={weekQuestions} />
       </div>
 
-      {/* Two-column section */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <h2 className="mb-4 text-base font-semibold text-foreground">
-            Last 7 days — DSA questions by difficulty
-          </h2>
-          <WeeklyChart logs={logs} />
-          <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <LegendDot color="var(--streak-easy)" label="Easy" />
-            <LegendDot color="var(--streak-medium)" label="Medium" />
-            <LegendDot color="var(--streak-hard)" label="Hard" />
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <h2 className="mb-4 text-base font-semibold text-foreground">
-            Streak calendar — this month
-          </h2>
-          <StreakCalendar dates={allDates} />
-          <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <LegendSquare className="bg-primary" label="Completed" />
-            <LegendSquare className="bg-[var(--streak-teal)]" label="Today" />
-            <LegendSquare className="bg-muted" label="Missed" />
-          </div>
-        </Card>
-      </div>
-
-      {/* All active habits */}
+      {/* View Your Progress */}
       <Card className="p-5">
-        <h2 className="mb-4 text-base font-semibold text-foreground">All active habits</h2>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-base font-semibold text-foreground">View Your Progress</h2>
+          {loggedHabits.length > 0 && selectedHabit && (
+            <div className="w-full sm:w-64">
+              <Select value={selectedHabit} onValueChange={setSelectedHabit}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a habit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loggedHabits.map((h) => {
+                    const Icon = iconForHabit(h);
+                    return (
+                      <SelectItem key={h} value={h}>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          {h}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : habitGroups.size === 0 ? (
+        ) : !selectedHabit ? (
           <p className="text-sm text-muted-foreground">
-            No habits logged yet. Head to “Log Today” to start.
+            No habits logged yet. Head to “Log Today” to start tracking.
           </p>
         ) : (
-          <ul className="divide-y divide-border">
-            {Array.from(habitGroups.entries()).map(([habit, rows]) => (
-              <HabitRow key={habit} habit={habit} rows={rows} />
-            ))}
-          </ul>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="mb-3 text-sm font-medium text-foreground">
+                Last 7 days — {selectedHabit}
+              </h3>
+              <HabitChart habit={selectedHabit} logs={habitLogs} />
+            </div>
+            <div>
+              <h3 className="mb-3 text-sm font-medium text-foreground">
+                Streak calendar — this month
+              </h3>
+              <StreakCalendar dates={habitDates} />
+              <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                <LegendSquare className="bg-primary" label="Completed" />
+                <LegendSquare className="bg-[var(--streak-teal)]" label="Today" />
+                <LegendSquare className="bg-muted" label="Missed" />
+              </div>
+            </div>
+          </div>
         )}
       </Card>
     </div>
@@ -186,15 +227,6 @@ function MetricCard({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
-      {label}
-    </span>
-  );
-}
-
 function LegendSquare({ className, label }: { className: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-2">
@@ -204,27 +236,114 @@ function LegendSquare({ className, label }: { className: string; label: string }
   );
 }
 
-function WeeklyChart({ logs }: { logs: LogRow[] }) {
+/* ---------------- Habit-aware chart ---------------- */
+
+interface HabitChartConfig {
+  /** unit shown in tooltip and Y axis label hint */
+  unit: string;
+  /** stacked = multiple bars per day; single = one numeric bar per day */
+  mode: "stacked" | "single";
+  /** for single mode */
+  color?: string;
+  label?: string;
+  valueOf?: (l: LogRow) => number;
+  /** for stacked mode */
+  series?: { key: string; color: string; valueOf: (l: LogRow) => number }[];
+}
+
+function getHabitChartConfig(habit: string): HabitChartConfig {
+  if (habit === "DSA & Coding") {
+    return {
+      unit: "questions",
+      mode: "stacked",
+      series: [
+        { key: "Easy", color: "var(--streak-easy)", valueOf: (l) => l.questions_easy },
+        { key: "Medium", color: "var(--streak-medium)", valueOf: (l) => l.questions_medium },
+        { key: "Hard", color: "var(--streak-hard)", valueOf: (l) => l.questions_hard },
+      ],
+    };
+  }
+  if (habit === "Reading a Book") {
+    return {
+      unit: "pages",
+      mode: "single",
+      label: "Pages",
+      color: "var(--streak-teal)",
+      valueOf: (l) => l.pages ?? 0,
+    };
+  }
+  if (habit === "Exercise & Workout") {
+    return {
+      unit: "minutes",
+      mode: "single",
+      label: "Minutes",
+      color: "var(--streak-medium)",
+      valueOf: (l) => l.duration ?? 0,
+    };
+  }
+  if (habit === "Meditation") {
+    return {
+      unit: "minutes",
+      mode: "single",
+      label: "Minutes",
+      color: "var(--streak-blue)",
+      valueOf: (l) => l.duration ?? 0,
+    };
+  }
+  if (habit === "Water Intake") {
+    return {
+      unit: "glasses",
+      mode: "single",
+      label: "Amount",
+      color: "var(--streak-blue)",
+      valueOf: (l) => l.duration ?? l.pages ?? 0,
+    };
+  }
+  // Default — covers Journaling, Sleep, Career, Music, Language, Nutrition, custom habits
+  return {
+    unit: "value",
+    mode: "single",
+    label: "Value",
+    color: "var(--primary)",
+    valueOf: (l) => l.duration ?? l.pages ?? 0,
+  };
+}
+
+function HabitChart({ habit, logs }: { habit: string; logs: LogRow[] }) {
+  const config = React.useMemo(() => getHabitChartConfig(habit), [habit]);
+
   const days = React.useMemo(() => {
-    const out: { day: string; date: string; Easy: number; Medium: number; Hard: number }[] =
-      [];
+    const out: { day: string; date: string; [k: string]: string | number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
-      out.push({ day: dayName, date: iso, Easy: 0, Medium: 0, Hard: 0 });
+      const row: { day: string; date: string; [k: string]: string | number } = {
+        day: dayName,
+        date: iso,
+      };
+      if (config.mode === "stacked") {
+        for (const s of config.series ?? []) row[s.key] = 0;
+      } else {
+        row[config.label ?? "Value"] = 0;
+      }
+      out.push(row);
     }
     for (const l of logs) {
       const slot = out.find((d) => d.date === l.date);
-      if (slot) {
-        slot.Easy += l.questions_easy;
-        slot.Medium += l.questions_medium;
-        slot.Hard += l.questions_hard;
+      if (!slot) continue;
+      if (config.mode === "stacked") {
+        for (const s of config.series ?? []) {
+          slot[s.key] = (slot[s.key] as number) + s.valueOf(l);
+        }
+      } else {
+        const key = config.label ?? "Value";
+        slot[key] = (slot[key] as number) + (config.valueOf?.(l) ?? 0);
       }
     }
     return out;
-  }, [logs]);
+  }, [logs, config]);
 
   return (
     <div className="h-56 w-full">
@@ -240,15 +359,37 @@ function WeeklyChart({ logs }: { logs: LogRow[] }) {
               borderRadius: 8,
               fontSize: 12,
             }}
+            formatter={(value: number, name: string) => [`${value} ${config.unit}`, name]}
           />
-          <Bar dataKey="Easy" stackId="q" fill="var(--streak-easy)" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="Medium" stackId="q" fill="var(--streak-medium)" />
-          <Bar dataKey="Hard" stackId="q" fill="var(--streak-hard)" radius={[4, 4, 0, 0]} />
+          {config.mode === "stacked" ? (
+            <>
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {(config.series ?? []).map((s, idx) => (
+                <Bar
+                  key={s.key}
+                  dataKey={s.key}
+                  stackId="q"
+                  fill={s.color}
+                  radius={
+                    idx === (config.series?.length ?? 0) - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
+                  }
+                />
+              ))}
+            </>
+          ) : (
+            <Bar
+              dataKey={config.label ?? "Value"}
+              fill={config.color}
+              radius={[4, 4, 0, 0]}
+            />
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
+
+/* ---------------- Streak calendar ---------------- */
 
 function StreakCalendar({ dates }: { dates: string[] }) {
   const today = todayISO();
@@ -297,38 +438,4 @@ function StreakCalendar({ dates }: { dates: string[] }) {
       </div>
     </div>
   );
-}
-
-function HabitRow({ habit, rows }: { habit: string; rows: LogRow[] }) {
-  const Icon = HABIT_ICONS[habit as Habit] ?? HABIT_ICONS["Journaling"];
-  const streak = calcStreak(rows.map((r) => r.date));
-  const last = rows[0]; // already sorted desc
-  const summary = summarize(last);
-  return (
-    <li className="flex items-center justify-between gap-3 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">{habit}</div>
-          <div className="truncate text-xs text-muted-foreground">{summary}</div>
-        </div>
-      </div>
-      <span className="inline-flex shrink-0 items-center rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-        🔥 {streak} day{streak === 1 ? "" : "s"}
-      </span>
-    </li>
-  );
-}
-
-function summarize(l: LogRow): string {
-  const parts: string[] = [`Last: ${l.date}`];
-  const q = l.questions_easy + l.questions_medium + l.questions_hard;
-  if (q > 0) parts.push(`${q} questions`);
-  if (l.pages) parts.push(`${l.pages} pages`);
-  if (l.duration) parts.push(`${l.duration} min`);
-  if (l.topic) parts.push(l.topic);
-  else if (l.description) parts.push(l.description);
-  return parts.join(" · ");
 }

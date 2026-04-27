@@ -248,7 +248,7 @@ interface HabitChartConfig {
   label?: string;
   valueOf?: (l: LogRow) => number;
   /** for stacked mode */
-  series?: { key: string; color: string; valueOf: (l: LogRow) => number }[];
+  series?: { key: string; color: string; pick: (l: LogRow) => number }[];
 }
 
 function getHabitChartConfig(habit: string): HabitChartConfig {

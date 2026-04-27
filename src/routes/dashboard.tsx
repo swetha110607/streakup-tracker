@@ -359,7 +359,7 @@ function HabitChart({ habit, logs }: { habit: string; logs: LogRow[] }) {
               borderRadius: 8,
               fontSize: 12,
             }}
-            formatter={(value: number, name: string) => [`${value} ${config.unit}`, name]}
+            formatter={(value, name) => [`${value} ${config.unit}`, name as string]}
           />
           {config.mode === "stacked" ? (
             <>

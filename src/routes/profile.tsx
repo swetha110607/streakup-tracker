@@ -1,17 +1,19 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Upload, Check } from "lucide-react";
+import { Upload, Check, Sun, Moon } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   useAuth,
   AVATAR_STYLES,
   avatarStyleById,
   getInitials,
 } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -35,6 +37,7 @@ function ProfilePage() {
 
 function ProfileContent() {
   const { user, profile, updateProfile } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = React.useState(profile?.name ?? "");
   const [styleId, setStyleId] = React.useState<string>(profile?.avatar_style ?? "purple");
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(profile?.avatar_url ?? null);

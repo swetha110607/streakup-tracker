@@ -498,6 +498,30 @@ function LogContent() {
             </>
           )}
 
+          {habit === "Meditation" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="mtopic">Type / Focus (optional)</Label>
+                <Input
+                  id="mtopic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. Breathwork, Body scan"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mdur">Duration (minutes)</Label>
+                <Input
+                  id="mdur"
+                  type="number"
+                  min={0}
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value || "0", 10))}
+                />
+              </div>
+            </>
+          )}
+
           {habit === "Water Intake" && (
             <>
               <div className="space-y-2">

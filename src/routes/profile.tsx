@@ -221,6 +221,30 @@ function ProfileContent() {
           </Button>
         </div>
       </Card>
+
+      <Card className="p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Appearance</h2>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-foreground">
+              {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </span>
+            <div>
+              <Label htmlFor="dark-mode" className="text-base font-medium">
+                Dark Mode
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Switch between light and dark theme.
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="dark-mode"
+            checked={theme === "dark"}
+            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+          />
+        </div>
+      </Card>
     </div>
   );
 }

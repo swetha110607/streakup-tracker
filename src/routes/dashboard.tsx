@@ -48,6 +48,7 @@ interface LogRow {
   questions_hard: number;
   duration: number | null;
   pages: number | null;
+  amount: number | null;
   description: string | null;
   note: string | null;
   created_at: string;

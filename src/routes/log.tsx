@@ -498,11 +498,42 @@ function LogContent() {
             </>
           )}
 
+          {habit === "Water Intake" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="wamount">Glasses consumed</Label>
+                <Input
+                  id="wamount"
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="e.g. 7"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the number of glasses (or litres). Shown on your dashboard chart.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wdesc">Note (optional)</Label>
+                <Input
+                  id="wdesc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Felt well-hydrated"
+                />
+              </div>
+            </>
+          )}
+
           {isDefaultHabit &&
             habit !== "DSA & Coding" &&
             habit !== "Career & Projects" &&
             habit !== "Reading a Book" &&
-            habit !== "Exercise & Workout" && (
+            habit !== "Exercise & Workout" &&
+            habit !== "Meditation" &&
+            habit !== "Water Intake" && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="desc">Description</Label>

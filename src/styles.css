@@ -77,13 +77,50 @@
   --streak-pink: oklch(0.78 0.12 0);
 }
 
+.dark {
+  /* StreakUp dark palette */
+  --background: oklch(0.165 0 0);                 /* #0F0F0F */
+  --foreground: oklch(0.95 0 0);                  /* #F0F0F0 */
+  --card: oklch(0.21 0 0);                        /* #1A1A1A */
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.21 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+
+  --primary: oklch(0.58 0.16 285);                /* lifted purple */
+  --primary-foreground: oklch(1 0 0);
+
+  --secondary: oklch(0.255 0 0);                  /* #242424 */
+  --secondary-foreground: oklch(0.95 0 0);
+
+  --muted: oklch(0.255 0 0);
+  --muted-foreground: oklch(0.72 0 0);            /* #A0A0A0 */
+
+  --accent: oklch(0.3 0.04 285);
+  --accent-foreground: oklch(0.95 0 0);
+
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(1 0 0);
+
+  --border: oklch(0.295 0 0);                     /* #2E2E2E */
+  --input: oklch(0.295 0 0);
+  --ring: oklch(0.58 0.16 285);
+
+  --streak-teal: oklch(0.68 0.13 175);
+  --streak-blue: oklch(0.7 0.13 240);
+  --streak-pink: oklch(0.8 0.12 0);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+  html {
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }

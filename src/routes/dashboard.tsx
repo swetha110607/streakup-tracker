@@ -48,6 +48,7 @@ interface LogRow {
   questions_hard: number;
   duration: number | null;
   pages: number | null;
+  amount: number | null;
   description: string | null;
   note: string | null;
   created_at: string;
@@ -67,19 +68,27 @@ function DashboardContent() {
   const [loading, setLoading] = React.useState(true);
   const [selectedHabit, setSelectedHabit] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  const loadLogs = React.useCallback(async () => {
     if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from("logs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
-      const rows = (data ?? []) as LogRow[];
-      setLogs(rows);
-      setLoading(false);
-    })();
+    const { data } = await supabase
+      .from("logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+    setLogs((data ?? []) as LogRow[]);
+    setLoading(false);
   }, [user]);
+
+  React.useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  // Refetch fresh data when the tab/window regains focus so newly logged entries appear.
+  React.useEffect(() => {
+    const onFocus = () => loadLogs();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadLogs]);
 
   // Habits the user has logged at least once, in order of most recent activity
   const loggedHabits = React.useMemo(() => {
@@ -296,7 +305,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Amount",
       color: "var(--streak-blue)",
-      pick: (l) => l.duration ?? l.pages ?? 0,
+      pick: (l) => l.amount ?? l.duration ?? l.pages ?? 0,
     };
   }
   // Default — covers Journaling, Sleep, Career, Music, Language, Nutrition, custom habits
@@ -305,7 +314,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
     mode: "single",
     label: "Value",
     color: "var(--primary)",
-    pick: (l) => l.duration ?? l.pages ?? 0,
+    pick: (l) => l.amount ?? l.duration ?? l.pages ?? 0,
   };
 }
 

@@ -250,6 +250,14 @@ function LogContent() {
     } else if (habit === "Exercise & Workout") {
       payload.topic = workoutType.trim() || null;
       payload.duration = duration || null;
+    } else if (habit === "Meditation") {
+      payload.topic = topic.trim() || null;
+      payload.duration = duration || null;
+    } else if (habit === "Water Intake") {
+      // Quantity-based: store glasses/litres in numeric `amount` column.
+      const n = parseFloat(amount);
+      payload.amount = Number.isFinite(n) ? n : null;
+      payload.description = description.trim() || null;
     } else if (isExistingCustomHabit && customFields) {
       // Map AI-generated fields into existing log columns:
       //   - first numeric field → duration (or pages if label mentions "page")
@@ -259,15 +267,27 @@ function LogContent() {
       let topicSet = false;
       let durationSet = false;
       let pagesSet = false;
+      let amountSet = false;
       for (const f of customFields) {
         const raw = (customValues[f.key] ?? "").trim();
         if (!raw) continue;
         if (f.type === "number") {
-          const n = parseInt(raw, 10);
-          if (!Number.isNaN(n)) {
+          const n = parseFloat(raw);
+          if (Number.isFinite(n)) {
             if (!pagesSet && /page/i.test(f.label)) {
               payload.pages = n;
               pagesSet = true;
+              continue;
+            }
+            if (!durationSet && /(minute|duration|time|hour|min\b)/i.test(f.label)) {
+              payload.duration = n;
+              durationSet = true;
+              continue;
+            }
+            if (!amountSet) {
+              // Quantity-based numeric field (glasses, reps, count, etc.)
+              payload.amount = n;
+              amountSet = true;
               continue;
             }
             if (!durationSet) {
@@ -288,6 +308,9 @@ function LogContent() {
     } else {
       payload.description = description.trim() || null;
       payload.topic = amount.trim() || null;
+      // Try to extract a leading number from "amount" string (e.g. "20 min", "2L", "8h") into numeric `amount`.
+      const m = amount.trim().match(/^-?\d+(\.\d+)?/);
+      if (m) payload.amount = parseFloat(m[0]);
     }
 
     const { error } = await supabase.from("logs").insert(payload as never);
@@ -475,11 +498,66 @@ function LogContent() {
             </>
           )}
 
+          {habit === "Meditation" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="mtopic">Type / Focus (optional)</Label>
+                <Input
+                  id="mtopic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. Breathwork, Body scan"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mdur">Duration (minutes)</Label>
+                <Input
+                  id="mdur"
+                  type="number"
+                  min={0}
+                  value={duration}
+                  onChange={(e) => setDuration(parseInt(e.target.value || "0", 10))}
+                />
+              </div>
+            </>
+          )}
+
+          {habit === "Water Intake" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="wamount">Glasses consumed</Label>
+                <Input
+                  id="wamount"
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="e.g. 7"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the number of glasses (or litres). Shown on your dashboard chart.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wdesc">Note (optional)</Label>
+                <Input
+                  id="wdesc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Felt well-hydrated"
+                />
+              </div>
+            </>
+          )}
+
           {isDefaultHabit &&
             habit !== "DSA & Coding" &&
             habit !== "Career & Projects" &&
             habit !== "Reading a Book" &&
-            habit !== "Exercise & Workout" && (
+            habit !== "Exercise & Workout" &&
+            habit !== "Meditation" &&
+            habit !== "Water Intake" && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="desc">Description</Label>

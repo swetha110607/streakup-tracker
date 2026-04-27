@@ -267,15 +267,27 @@ function LogContent() {
       let topicSet = false;
       let durationSet = false;
       let pagesSet = false;
+      let amountSet = false;
       for (const f of customFields) {
         const raw = (customValues[f.key] ?? "").trim();
         if (!raw) continue;
         if (f.type === "number") {
-          const n = parseInt(raw, 10);
-          if (!Number.isNaN(n)) {
+          const n = parseFloat(raw);
+          if (Number.isFinite(n)) {
             if (!pagesSet && /page/i.test(f.label)) {
               payload.pages = n;
               pagesSet = true;
+              continue;
+            }
+            if (!durationSet && /(minute|duration|time|hour|min\b)/i.test(f.label)) {
+              payload.duration = n;
+              durationSet = true;
+              continue;
+            }
+            if (!amountSet) {
+              // Quantity-based numeric field (glasses, reps, count, etc.)
+              payload.amount = n;
+              amountSet = true;
               continue;
             }
             if (!durationSet) {
@@ -296,6 +308,9 @@ function LogContent() {
     } else {
       payload.description = description.trim() || null;
       payload.topic = amount.trim() || null;
+      // Try to extract a leading number from "amount" string (e.g. "20 min", "2L", "8h") into numeric `amount`.
+      const m = amount.trim().match(/^-?\d+(\.\d+)?/);
+      if (m) payload.amount = parseFloat(m[0]);
     }
 
     const { error } = await supabase.from("logs").insert(payload as never);

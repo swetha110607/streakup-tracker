@@ -250,6 +250,14 @@ function LogContent() {
     } else if (habit === "Exercise & Workout") {
       payload.topic = workoutType.trim() || null;
       payload.duration = duration || null;
+    } else if (habit === "Meditation") {
+      payload.topic = topic.trim() || null;
+      payload.duration = duration || null;
+    } else if (habit === "Water Intake") {
+      // Quantity-based: store glasses/litres in numeric `amount` column.
+      const n = parseFloat(amount);
+      payload.amount = Number.isFinite(n) ? n : null;
+      payload.description = description.trim() || null;
     } else if (isExistingCustomHabit && customFields) {
       // Map AI-generated fields into existing log columns:
       //   - first numeric field → duration (or pages if label mentions "page")

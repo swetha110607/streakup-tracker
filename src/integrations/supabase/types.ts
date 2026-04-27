@@ -37,6 +37,7 @@ export type Database = {
       }
       logs: {
         Row: {
+          amount: number | null
           created_at: string
           date: string
           description: string | null
@@ -52,6 +53,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount?: number | null
           created_at?: string
           date?: string
           description?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount?: number | null
           created_at?: string
           date?: string
           description?: string | null

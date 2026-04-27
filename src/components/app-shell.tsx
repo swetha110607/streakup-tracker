@@ -15,6 +15,7 @@ const TABS = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, loading, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 

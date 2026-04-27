@@ -297,7 +297,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
       mode: "single",
       label: "Amount",
       color: "var(--streak-blue)",
-      pick: (l) => l.duration ?? l.pages ?? 0,
+      pick: (l) => l.amount ?? l.duration ?? l.pages ?? 0,
     };
   }
   // Default — covers Journaling, Sleep, Career, Music, Language, Nutrition, custom habits
@@ -306,7 +306,7 @@ function getHabitChartConfig(habit: string): HabitChartConfig {
     mode: "single",
     label: "Value",
     color: "var(--primary)",
-    pick: (l) => l.duration ?? l.pages ?? 0,
+    pick: (l) => l.amount ?? l.duration ?? l.pages ?? 0,
   };
 }
 

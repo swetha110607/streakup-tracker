@@ -246,6 +246,103 @@ function ProfileContent() {
           />
         </div>
       </Card>
+
+      <BadgesSection />
     </div>
+  );
+}
+
+const EARNED_BADGES_STORAGE_KEY = "streakup-earned-badges";
+
+function BadgesSection() {
+  const { user } = useAuth();
+  const [earned, setEarned] = React.useState<Set<string>>(new Set());
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const result = await evaluateBadges(user.id);
+      if (cancelled) return;
+
+      // Compare with previously seen badges to detect newly earned ones
+      try {
+        const raw = localStorage.getItem(`${EARNED_BADGES_STORAGE_KEY}-${user.id}`);
+        const prev = new Set<string>(raw ? JSON.parse(raw) : []);
+        const newly = [...result].filter((id) => !prev.has(id));
+        if (newly.length > 0 && prev.size > 0) {
+          // Only celebrate after the first load (prev.size > 0 ensures we don't spam on first ever visit)
+          newly.forEach((id) => {
+            const b = BADGES.find((x) => x.id === id);
+            if (b) toast.success(`🎉 New badge unlocked: ${b.emoji} ${b.name}`);
+          });
+        }
+        localStorage.setItem(
+          `${EARNED_BADGES_STORAGE_KEY}-${user.id}`,
+          JSON.stringify([...result]),
+        );
+      } catch {
+        /* ignore storage errors */
+      }
+
+      setEarned(result);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  return (
+    <Card className="p-6">
+      <div className="mb-4 flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Milestone Badges</h2>
+        <span className="text-xs text-muted-foreground">
+          {loading ? "…" : `${earned.size} / ${BADGES.length} earned`}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        {BADGES.map((b) => {
+          const isEarned = earned.has(b.id);
+          const glowColor =
+            b.glow === "primary" ? "var(--primary)" : "var(--streak-teal)";
+          return (
+            <div
+              key={b.id}
+              className={`relative flex flex-col items-center rounded-xl border p-4 text-center transition-all ${
+                isEarned
+                  ? "border-border bg-card"
+                  : "border-border/60 bg-muted/40 opacity-60"
+              }`}
+              style={
+                isEarned
+                  ? {
+                      boxShadow: `0 0 0 1px color-mix(in oklab, ${glowColor} 35%, transparent), 0 8px 24px -8px color-mix(in oklab, ${glowColor} 50%, transparent)`,
+                    }
+                  : undefined
+              }
+            >
+              <div
+                className={`mb-2 text-4xl ${isEarned ? "" : "grayscale blur-[1px]"}`}
+                aria-hidden
+              >
+                {b.emoji}
+              </div>
+              <div
+                className={`text-sm font-semibold ${
+                  isEarned ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {b.name}
+              </div>
+              <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                {b.description}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

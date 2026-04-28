@@ -1,18 +1,15 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Sun, Moon, MessageCircle, Users } from "lucide-react";
+import { Sun, Moon, Users } from "lucide-react";
 import { useAuth, avatarStyleById, getInitials } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
+import { StudyBuddyWidget } from "@/components/study-buddy-widget";
 
 const TABS = [
   { to: "/", label: "Home" },
-  { to: "/dashboard", label: "Dashboard" },
   { to: "/log", label: "Log Today" },
-  { to: "/notes", label: "Notes" },
   { to: "/friends", label: "Friends", icon: Users },
-  { to: "/study-buddy", label: "Study Buddy", icon: MessageCircle },
-  { to: "/profile", label: "Profile" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {

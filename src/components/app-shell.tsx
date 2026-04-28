@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, MessageCircle } from "lucide-react";
 import { useAuth, avatarStyleById, getInitials } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ const TABS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/log", label: "Log Today" },
   { to: "/notes", label: "Notes" },
+  { to: "/study-buddy", label: "Study Buddy", icon: MessageCircle },
   { to: "/profile", label: "Profile" },
 ] as const;
 
@@ -93,16 +94,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2">
           {TABS.map((t) => {
             const active = location.pathname === t.to;
+            const Icon = "icon" in t ? t.icon : null;
             return (
               <Link
                 key={t.to}
                 to={t.to}
-                className={`relative inline-flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                className={`relative inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
+                {Icon && <Icon className="h-4 w-4" />}
                 {t.label}
                 {active && (
                   <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />

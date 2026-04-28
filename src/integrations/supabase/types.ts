@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_members: {
+        Row: {
+          challenge_id: string
+          id: string
+          joined_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          challenge_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_members_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          created_at: string
+          creator_id: string
+          duration_days: number
+          end_date: string
+          habit: string
+          id: string
+          invite_code: string
+          start_date: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          duration_days: number
+          end_date: string
+          habit: string
+          id?: string
+          invite_code?: string
+          start_date?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          duration_days?: number
+          end_date?: string
+          habit?: string
+          id?: string
+          invite_code?: string
+          start_date?: string
+          title?: string
+        }
+        Relationships: []
+      }
       custom_habits: {
         Row: {
           created_at: string
@@ -30,6 +98,33 @@ export type Database = {
         Update: {
           created_at?: string
           habit_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          friend_code: string
+          friend_name: string | null
+          friend_user_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_code: string
+          friend_name?: string | null
+          friend_user_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_code?: string
+          friend_name?: string | null
+          friend_user_id?: string
           id?: string
           user_id?: string
         }
@@ -91,6 +186,7 @@ export type Database = {
           avatar_style: string | null
           avatar_url: string | null
           created_at: string
+          friend_code: string
           id: string
           name: string | null
           updated_at: string
@@ -100,6 +196,7 @@ export type Database = {
           avatar_style?: string | null
           avatar_url?: string | null
           created_at?: string
+          friend_code?: string
           id?: string
           name?: string | null
           updated_at?: string
@@ -109,6 +206,7 @@ export type Database = {
           avatar_style?: string | null
           avatar_url?: string | null
           created_at?: string
+          friend_code?: string
           id?: string
           name?: string | null
           updated_at?: string
@@ -121,7 +219,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_challenge_by_code: {
+        Args: { _invite_code: string }
+        Returns: string
+      }
+      generate_friend_code: { Args: never; Returns: string }
+      is_challenge_member: {
+        Args: { _challenge_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -14,6 +14,7 @@ import {
   getInitials,
 } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
+import { BADGES, evaluateBadges } from "@/lib/badges";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

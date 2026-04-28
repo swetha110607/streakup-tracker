@@ -1,6 +1,6 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Upload, Check, Sun, Moon } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Upload, Check, Sun, Moon, BarChart3, NotebookPen, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

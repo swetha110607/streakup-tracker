@@ -108,6 +108,41 @@ function ProfileContent() {
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Profile</h1>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Link
+          to="/dashboard"
+          className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <BarChart3 className="h-6 w-6" />
+          </span>
+          <div className="flex-1">
+            <div className="text-base font-semibold text-foreground">Dashboard</div>
+            <div className="text-xs text-muted-foreground">View your progress</div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
+        <Link
+          to="/notes"
+          className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
+        >
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: "color-mix(in oklab, var(--streak-teal) 15%, transparent)",
+              color: "var(--streak-teal)",
+            }}
+          >
+            <NotebookPen className="h-6 w-6" />
+          </span>
+          <div className="flex-1">
+            <div className="text-base font-semibold text-foreground">Notes</div>
+            <div className="text-xs text-muted-foreground">Your saved notes</div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
+
       <Card className="p-6">
         {/* Preview */}
         <div className="mb-6 flex items-center gap-4">

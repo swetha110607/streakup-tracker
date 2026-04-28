@@ -94,16 +94,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2">
           {TABS.map((t) => {
             const active = location.pathname === t.to;
+            const Icon = "icon" in t ? t.icon : null;
             return (
               <Link
                 key={t.to}
                 to={t.to}
-                className={`relative inline-flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                className={`relative inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
+                {Icon && <Icon className="h-4 w-4" />}
                 {t.label}
                 {active && (
                   <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />

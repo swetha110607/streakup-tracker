@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, MessageCircle } from "lucide-react";
 import { useAuth, avatarStyleById, getInitials } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ const TABS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/log", label: "Log Today" },
   { to: "/notes", label: "Notes" },
+  { to: "/study-buddy", label: "Study Buddy", icon: MessageCircle },
   { to: "/profile", label: "Profile" },
 ] as const;
 

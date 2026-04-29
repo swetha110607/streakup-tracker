@@ -16,6 +16,21 @@ The core idea: log what you do every day, visualise your progress over time, and
 🌙 Light and dark mode — toggle from the navbar or Profile page, preference saved across sessions
 👤 Profile page — edit your name, pick an avatar, and manage appearance settings
 🔒 Anonymous auth — no email or password needed, just enter your name and start tracking
+- 🤖 **AI Study Buddy** — a floating chat assistant powered by Claude AI, accessible 
+  on every page without navigating away. Ask anything related to what you're learning 
+  and get instant beginner-friendly responses.
+
+- 🏆 **Milestone Badges** — eight achievement badges that unlock automatically based 
+  on your progress. From your first log to a 100-day streak, every milestone is 
+  recognised and displayed on your profile.
+
+- 👥 **Friend Leaderboard** — connect with friends using unique 6-character friend 
+  codes and see each other's streaks ranked on a live leaderboard. Real-time updates 
+  every time someone logs a habit.
+
+- ⚔️ **Habit Challenges** — create or join group challenges with a shareable invite 
+  code. Pick a habit, set a duration, and compete with friends to see who stays most 
+  consistent with a live mini leaderboard inside each challenge.
 
 🛠️ Tech Stack
 LayerTechnologyFrontendReact + TypeScriptStylingTailwind CSSChartsRechartsBackend & DatabaseSupabase (anonymous auth + PostgreSQL)HostingLovable Cloud
